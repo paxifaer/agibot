@@ -22,6 +22,7 @@ public:
         }
 
         auto goal_msg = nav2_msgs::action::NavigateToPose::Goal();
+        goal_msg.pose.header.stamp = node_->now();
         goal_msg.pose = pose;
 
         auto send_goal_options = rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SendGoalOptions();
@@ -32,7 +33,7 @@ public:
                 cb({false, "Navigation failed"});
             }
         };
-
+        rclcpp::sleep_for(std::chrono::milliseconds(500));
         client_->async_send_goal(goal_msg, send_goal_options);
     }
 
@@ -42,15 +43,17 @@ public:
     }
 
     void follow_target(int target_id, std::function<void(TaskResult)> cb) override {
-        cb({false, "Not implemented"}, "");
+        (void)target_id;
+        cb({false, "Not implemented"});
     }
 
     void stop(std::function<void(TaskResult)> cb) override {
         // TODO: 可实现cmd_vel zero
-        cb({true, ""}, "");
+        cb({true, ""});
     }
 
 private:
     std::shared_ptr<rclcpp::Node> node_;
+    
     rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SharedPtr client_;
 };

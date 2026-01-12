@@ -5,27 +5,40 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# find dependencies
+# 必须最先 find ament
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav2_msgs REQUIRED)
 
-# include
 include_directories(include)
 
-# 添加可执行文件
-add_executable(task_orchestrator src/task_orchestrator.cpp)
+add_executable(task_orchestrator
+  src/task_orchestrator.cpp
+)
+find_package(nlohmann_json REQUIRED)
+
+target_link_libraries(
+  task_orchestrator
+  nlohmann_json::nlohmann_json
+)
+
 ament_target_dependencies(task_orchestrator
   rclcpp
+  rclcpp_action
   geometry_msgs
   nav2_msgs
 )
 
-# 安装可执行文件
 install(TARGETS
   task_orchestrator
   DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
+  DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}
 )
 
 ament_package()
