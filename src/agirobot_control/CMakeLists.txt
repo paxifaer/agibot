@@ -18,10 +18,12 @@ add_executable(task_orchestrator
   src/task_orchestrator.cpp
 )
 find_package(nlohmann_json REQUIRED)
+find_package(CURL REQUIRED)
 
 target_link_libraries(
   task_orchestrator
   nlohmann_json::nlohmann_json
+  CURL::libcurl
 )
 
 ament_target_dependencies(task_orchestrator
