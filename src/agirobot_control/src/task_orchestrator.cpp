@@ -2,7 +2,7 @@
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include <curl/curl.h>
-
+#include <future> // 用于 promise/future
 
 
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
@@ -51,40 +51,23 @@ TaskOrchestrator::TaskOrchestrator(std::shared_ptr<RobotAdapter> adapter)
 {
 }
 
-#include <future> // 用于 promise/future
-
-void TaskOrchestrator::run_task_sequence(const json &task_sequence) {
-    for(const auto &task : task_sequence["tasks"]) {
-        std::string type = task["type"];
-        std::promise<TaskResult> prom;
-        std::future<TaskResult> fut = prom.get_future();
-
-        if(type == "navigate") {
-            geometry_msgs::msg::PoseStamped pose;
-            pose.pose.position.x = task["pose"]["x"];
-            pose.pose.position.y = task["pose"]["y"];
-            pose.pose.orientation.w = 1.0; // 简化
-
-            adapter_->navigate_to(pose, [&prom](TaskResult res){
-                prom.set_value(res); // 回调完成时设置 promise
-            });
-        } else if(type == "observe") {
-            adapter_->observe([&prom](TaskResult res, std::string image_path){
-                if(res.success)
-                    RCLCPP_INFO(rclcpp::get_logger("TaskOrchestrator"), "Observed: %s", image_path.c_str());
-                else
-                    RCLCPP_WARN(rclcpp::get_logger("TaskOrchestrator"), "Observe failed");
-                prom.set_value(res); // 回调完成时设置 promise
-            });
-        }
-
-        // 阻塞等待任务完成
-        TaskResult result = fut.get();  // 这里会真正等待异步完成
-        if(!result.success) {
-            RCLCPP_WARN(rclcpp::get_logger("TaskOrchestrator"), "Task failed, stopping sequence.");
-            break; // 可选：失败就停止后续任务
-        }
+void TaskOrchestrator::run_task_sequence(const json &tasks)
+{
+    if (!tasks.contains("tasks")) {
+        RCLCPP_ERROR(get_logger(), "No tasks field in JSON");
+        return;
     }
+
+    tasks_.clear();
+    for (auto &t : tasks["tasks"]) {
+        tasks_.push_back(t);
+    }
+
+    current_task_index_ = 0;
+
+    RCLCPP_INFO(get_logger(), "Starting task sequence, %zu tasks", tasks_.size());
+
+    run_next_task();  // 🚀 只在这里触发一次
 }
 
 
@@ -114,7 +97,60 @@ void TaskOrchestrator::execute_task_json(const std::string &json_str)
     }
 }
 
+void TaskOrchestrator::run_next_task()
+{
+    if (current_task_index_ >= tasks_.size()) {
+        RCLCPP_INFO(get_logger(), "All tasks finished");
+        return;
+    }
 
+    const auto &task = tasks_[current_task_index_];
+    std::string type = task["type"];
+
+    RCLCPP_INFO(get_logger(), "Executing task %zu: %s",
+                current_task_index_, type.c_str());
+
+    if (type == "navigate") {
+        geometry_msgs::msg::PoseStamped pose;
+        pose.header.frame_id = "map";
+        pose.header.stamp = now();
+        pose.pose.position.x = task["pose"]["x"];
+        pose.pose.position.y = task["pose"]["y"];
+        pose.pose.orientation.w = 1.0;
+
+        adapter_->navigate_to(
+            pose,
+            [this](TaskResult res)
+            {
+                if (!res.success) {
+                    RCLCPP_ERROR(get_logger(),
+                        "Navigate failed: %s", res.reason.c_str());
+                    return;  
+                }
+
+                RCLCPP_INFO(get_logger(), "Navigate succeeded");
+
+                current_task_index_++;
+                run_next_task(); 
+            });
+    }
+    else if (type == "observe") {
+        adapter_->observe(
+            [this](TaskResult res, std::string image_path)
+            {
+                if (!res.success) {
+                    RCLCPP_ERROR(get_logger(), "Observe failed");
+                    return;
+                }
+
+                RCLCPP_INFO(get_logger(), "Observed image: %s",
+                            image_path.c_str());
+
+                current_task_index_++;
+                run_next_task();
+            });
+    }
+}
 
 int main(int argc, char **argv) {
   rclcpp::init(argc, argv);
@@ -127,14 +163,6 @@ int main(int argc, char **argv) {
     RCLCPP_INFO(orchestrator->get_logger(), "Waiting for Nav2 action server...");
     rclcpp::sleep_for(std::chrono::seconds(1));
   }
-
-  //   auto demo_json = R"({
-  //     "tasks": [
-  //       { "type": "navigate", "x": 0.1, "y": 0.0, "yaw": 0.0  }
-  //     ]
-  //   })";
-
-  // orchestrator->execute_task_json(demo_json);
 
   json tasks = request_from_llm("去厨房看看桌上有没有红杯子");
   orchestrator->run_task_sequence(tasks);

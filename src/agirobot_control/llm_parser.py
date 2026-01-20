@@ -12,9 +12,9 @@ def parse(q: Query):
     if "去厨房" in q.text:
         return {
             "tasks": [
-                {"type": "navigate", "pose": {"x": 2.0, "y": 1.0, "theta": 0.0}},
+                {"type": "navigate", "pose": {"x": 0.6, "y": 0.6, "theta": 0.0}},
                 {"type": "observe"},
-                {"type": "navigate", "pose": {"x": 0.0, "y": 0.0, "theta": 0.0}}
+                {"type": "navigate", "pose": {"x": 1.76, "y": -0.4, "theta": 0.0}}
             ]
         }
     return {"tasks": []}
