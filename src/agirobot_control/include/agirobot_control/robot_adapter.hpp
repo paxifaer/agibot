@@ -5,6 +5,14 @@
 
 struct TaskResult { bool success; std::string reason; };
 
+struct TaskStatus {
+    std::string task_id;
+    std::string type;
+    rclcpp::Time start_time;
+    rclcpp::Time end_time;
+    TaskResult result;
+};
+
 class RobotAdapter {
 public:
     virtual ~RobotAdapter() = default;
@@ -18,3 +26,5 @@ public:
 
     virtual void stop(std::function<void(TaskResult)> cb) = 0;
 };
+
+

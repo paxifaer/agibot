@@ -117,10 +117,10 @@ void TaskOrchestrator::run_next_task()
         pose.pose.position.x = task["pose"]["x"];
         pose.pose.position.y = task["pose"]["y"];
         pose.pose.orientation.w = 1.0;
-
+        auto t_start = now();
         adapter_->navigate_to(
             pose,
-            [this](TaskResult res)
+            [this, t_start](TaskResult res)
             {
                 if (!res.success) {
                     RCLCPP_ERROR(get_logger(),
@@ -131,6 +131,9 @@ void TaskOrchestrator::run_next_task()
                 RCLCPP_INFO(get_logger(), "Navigate succeeded");
 
                 current_task_index_++;
+                auto t_end = now();
+                auto latency = (t_end - t_start).seconds();
+
                 run_next_task(); 
             });
     }

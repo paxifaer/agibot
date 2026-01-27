@@ -1,0 +1,173 @@
+<?xml version="1.0" ?>
+<robot name="turtlebot3_burger"
+  xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <!-- ================== Materials ================== -->
+  <material name="black"><color rgba="0 0 0 1"/></material>
+  <material name="dark"><color rgba="0.3 0.3 0.3 1"/></material>
+  <material name="light_black"><color rgba="0.4 0.4 0.4 1"/></material>
+
+  <!-- ================== Base ================== -->
+  <link name="base_footprint"/>
+
+  <joint name="base_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0.01" rpy="0 0 0"/>
+  </joint>
+
+  <link name="base_link">
+    <visual>
+      <origin xyz="-0.032 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://turtlebot3_gazebo/models/turtlebot3_common/meshes/bases/burger_base.stl"
+              scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="light_black"/>
+    </visual>
+
+    <collision>
+      <origin xyz="-0.032 0 0.07"/>
+      <geometry>
+        <box size="0.14 0.14 0.143"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <mass value="0.82573504"/>
+      <inertia ixx="0.002212" ixy="0" ixz="0"
+               iyy="0.002119" iyz="0"
+               izz="0.002006"/>
+    </inertial>
+  </link>
+
+  <!-- ================== Wheels ================== -->
+  <joint name="wheel_left_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="wheel_left_link"/>
+    <origin xyz="0 0.08 0.023" rpy="-1.57 0 0"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <link name="wheel_left_link">
+    <visual>
+      <geometry>
+        <mesh filename="package://turtlebot3_gazebo/models/turtlebot3_common/meshes/wheels/left_tire.stl"
+              scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="dark"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="0.033" length="0.018"/>
+      </geometry>
+    </collision>
+<inertial>
+  <origin xyz="0 0 0"/>
+  <mass value="0.0285"/>
+  <inertia
+    ixx="1.1175580e-05"
+    ixy="0.0"
+    ixz="0.0"
+    iyy="1.1192413e-05"
+    iyz="0.0"
+    izz="2.0712558e-05"/>
+</inertial>
+
+  </link>
+
+  <joint name="wheel_right_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="wheel_right_link"/>
+    <origin xyz="0 -0.08 0.023" rpy="-1.57 0 0"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <link name="wheel_right_link">
+    <visual>
+      <geometry>
+        <mesh filename="package://turtlebot3_gazebo/models/turtlebot3_common/meshes/wheels/right_tire.stl"
+              scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="dark"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="0.033" length="0.018"/>
+      </geometry>
+    </collision>
+<inertial>
+  <origin xyz="0 0 0"/>
+  <mass value="0.0285"/>
+  <inertia
+    ixx="1.1175580e-05"
+    ixy="0.0"
+    ixz="0.0"
+    iyy="1.1192413e-05"
+    iyz="0.0"
+    izz="2.0712558e-05"/>
+</inertial>
+
+  </link>
+
+  <!-- ================== IMU ================== -->
+  <joint name="imu_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="imu_link"/>
+    <origin xyz="-0.032 0 0.068"/>
+  </joint>
+  <link name="imu_link"/>
+
+  <!-- ================== Lidar ================== -->
+  <joint name="scan_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="base_scan"/>
+    <origin xyz="-0.032 0 0.172"/>
+  </joint>
+
+  <link name="base_scan">
+    <visual>
+      <geometry>
+        <mesh filename="package://turtlebot3_gazebo/models/turtlebot3_common/meshes/sensors/lds.stl"
+              scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="dark"/>
+    </visual>
+  </link>
+
+  <!-- ================== Camera（关键修复点） ================== -->
+  <joint name="camera_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="camera_link"/>
+    <origin xyz="0.05 0 0.20" rpy="0 0 0"/>
+  </joint>
+
+  <link name="camera_link">
+    <visual>
+      <geometry>
+        <box size="0.02 0.02 0.02"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <gazebo reference="camera_link">
+    <sensor type="camera" name="camera">
+      <update_rate>30</update_rate>
+      <camera>
+        <horizontal_fov>1.396</horizontal_fov>
+        <image>
+          <width>640</width>
+          <height>480</height>
+          <format>R8G8B8</format>
+        </image>
+      </camera>
+      <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+        <ros>
+          <namespace>/camera</namespace>
+        </ros>
+        <imageTopicName>image_raw</imageTopicName>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+</robot>

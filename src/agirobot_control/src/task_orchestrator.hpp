@@ -19,6 +19,6 @@ public:
     void run_next_task();
     size_t current_task_index_{0};
     void execute_task_json(const std::string &json_str);
-
+    // std::vector<TaskStatus> ;
     std::shared_ptr<RobotAdapter> adapter_;
 };
