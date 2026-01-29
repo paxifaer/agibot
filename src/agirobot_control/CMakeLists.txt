@@ -11,6 +11,9 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav2_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(OpenCV REQUIRED)
 
 include_directories(include)
 
@@ -31,6 +34,8 @@ ament_target_dependencies(task_orchestrator
   rclcpp_action
   geometry_msgs
   nav2_msgs
+  sensor_msgs
+  cv_bridge
 )
 
 install(TARGETS

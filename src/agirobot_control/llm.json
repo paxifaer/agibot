@@ -1,7 +1,9 @@
 {
   "tasks": [
-    {"type": "navigate", "pose": {"x": 0.5, "y": 0.5, "theta": 0.0}},
-    {"type": "observe"},
-    {"type": "navigate", "pose": {"x": 0.0, "y": 0.0, "theta": 0.0}}
+    { "type": "navigate", "x": 0.5, "y": 0.5, "theta": 0.0  },
+    { "type": "observe" },
+    { "type": "navigate", "x": 0.8, "y": 0.8, "theta": 0.0  },
+    { "type": "observe" },
+    { "type": "navigate", "x": -0.2, "y": -0.1, "theta": 0.0 }
   ]
 }
