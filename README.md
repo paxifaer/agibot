@@ -22,6 +22,13 @@ ros2 run turtlebot3_teleop teleop_keyboard(使用键盘建图)
 保存自己地图：ros2 run nav2_map_server map_saver_cli \
   -f my_map  
 
+拉取gazebo+navigation2：
+  
+  ros2 launch turtlebot3_gazebo  turtlebot3_world.launch.py
+  ros2 launch turtlebot3_navigation2  navigation2.launch.py use_sim_time:=true 
+ros2 launch turtlebot3_navigation2 navigation2.launch.py \
+  log_level:=debug
+
 运行使用自己的world进行仿真：
   ros2 launch agirobot_control agibot_sim.launch.py world:=/home/parsifal/study/agibot/worlds/turtlebot3_world.world use_sim_time:=true
 
