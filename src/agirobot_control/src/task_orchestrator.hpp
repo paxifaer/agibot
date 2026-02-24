@@ -3,22 +3,26 @@
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "agirobot_control/turtlebot3_adapter.hpp"
 #include <nlohmann/json.hpp>
-
+#include <fstream>
 using json = nlohmann::json;
-class TaskOrchestrator : public rclcpp::Node {
+class TaskOrchestrator : public rclcpp::Node
+{
 public:
-    TaskOrchestrator(std::shared_ptr<RobotAdapter> adapter);
-    void set_adapter(std::shared_ptr<RobotAdapter> adapter) {
-        adapter_ = adapter;
-    }
+    explicit TaskOrchestrator();
+     
+    ~TaskOrchestrator();
 
-    void run_task_sequence(const json &task_sequence);
+    void set_adapter(std::shared_ptr<RobotAdapter> adapter);
 
-   private:
-    std::vector<json> tasks_;
-    void run_next_task();
-    size_t current_task_index_{0};
-    void execute_task_json(const std::string &json_str);
-    // std::vector<TaskStatus> ;
+    void run_task_sequence(const nlohmann::json &tasks);
+
+private:
+
+    void wait_nav(const geometry_msgs::msg::PoseStamped &pose);
+
+    void wait_observe();
+
     std::shared_ptr<RobotAdapter> adapter_;
+
+    std::ofstream perf_file_;
 };

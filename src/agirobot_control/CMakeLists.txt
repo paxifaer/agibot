@@ -29,6 +29,15 @@ target_link_libraries(
   CURL::libcurl
 )
 
+add_executable(image_latency_monitor
+  src/image_latency_monitor.cpp
+)
+
+ament_target_dependencies(image_latency_monitor
+  rclcpp
+  sensor_msgs
+)
+
 ament_target_dependencies(task_orchestrator
   rclcpp
   rclcpp_action
@@ -40,6 +49,7 @@ ament_target_dependencies(task_orchestrator
 
 install(TARGETS
   task_orchestrator
+  image_latency_monitor
   DESTINATION lib/${PROJECT_NAME}
 )
 

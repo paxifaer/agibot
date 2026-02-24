@@ -7,36 +7,29 @@
 #include <curl/curl.h>
 #include <future>
 #include <iostream>
+#include <chrono>
+#include <fstream>
+#include <thread>
 
 using json = nlohmann::json;
 
-/* ============================= */
-/*         CURL 回调函数         */
-/* ============================= */
-
-size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp)
+static size_t WriteCallback(void* contents, size_t size,
+                            size_t nmemb, void* userp)
 {
     size_t total = size * nmemb;
     ((std::string*)userp)->append((char*)contents, total);
     return total;
 }
 
-/* ============================= */
-/*        LLM 请求函数（安全版）  */
-/* ============================= */
-
-json request_from_llm(const std::string &text)
+static json request_from_llm(const std::string &text)
 {
     CURL* curl = curl_easy_init();
     std::string buffer;
     json result;
 
-    if (!curl) {
-        std::cerr << "Failed to init curl" << std::endl;
+    if (!curl)
         return result;
-    }
 
-    // 构造 JSON 请求体（防止中文转义问题）
     json req_body;
     req_body["text"] = text;
     std::string post_data = req_body.dump();
@@ -52,175 +45,169 @@ json request_from_llm(const std::string &text)
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
     curl_easy_setopt(curl, CURLOPT_PROXY, "");
 
-    CURLcode res = curl_easy_perform(curl);
-
-    long http_code = 0;
-    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+    curl_easy_perform(curl);
 
     curl_easy_cleanup(curl);
     curl_slist_free_all(headers);
 
-    if (res != CURLE_OK) {
-        std::cerr << "curl error: "
-                  << curl_easy_strerror(res) << std::endl;
-        return result;
-    }
-
-    if (http_code != 200) {
-        std::cerr << "HTTP error: " << http_code << std::endl;
-        std::cerr << "Response: " << buffer << std::endl;
-        return result;
-    }
-
-    if (buffer.empty()) {
-        std::cerr << "Empty response from LLM server" << std::endl;
-        return result;
-    }
-
     try {
         result = json::parse(buffer);
     }
-    catch (const std::exception &e) {
-        std::cerr << "JSON parse error: " << e.what() << std::endl;
-        std::cerr << "Raw response: " << buffer << std::endl;
+    catch (...) {
+        std::cerr << "JSON parse error\n";
     }
 
     return result;
 }
 
-/* ============================= */
-/*        TaskOrchestrator       */
-/* ============================= */
+/* ===================================================== */
+/*                 TaskOrchestrator 实现                 */
+/* ===================================================== */
 
-TaskOrchestrator::TaskOrchestrator(std::shared_ptr<RobotAdapter> adapter)
-: rclcpp::Node("task_orchestrator",
-    rclcpp::NodeOptions().append_parameter_override("use_sim_time", true)),
-  adapter_(adapter)
+TaskOrchestrator::TaskOrchestrator()
+: Node("task_orchestrator",
+       rclcpp::NodeOptions().append_parameter_override("use_sim_time", true))
 {
+    perf_file_.open("e2e_latency.csv");
+    perf_file_ << "task_type,start_ns,end_ns,latency_ms\n";
+}
+
+TaskOrchestrator::~TaskOrchestrator()
+{
+    if (perf_file_.is_open()) {
+        perf_file_.flush();
+        perf_file_.close();
+    }
+}
+
+void TaskOrchestrator::set_adapter(std::shared_ptr<RobotAdapter> adapter)
+{
+    adapter_ = adapter;
 }
 
 void TaskOrchestrator::run_task_sequence(const json &tasks)
 {
     if (!tasks.contains("tasks") || !tasks["tasks"].is_array()) {
-        RCLCPP_ERROR(get_logger(), "Invalid task JSON format!");
+        RCLCPP_ERROR(get_logger(), "Invalid task JSON format");
         return;
     }
 
-    tasks_.clear();
-    for (auto &t : tasks["tasks"])
-        tasks_.push_back(t);
+    RCLCPP_INFO(get_logger(), "Start task sequence");
 
-    if (tasks_.empty()) {
-        RCLCPP_WARN(get_logger(), "No tasks received.");
-        return;
-    }
+    for (auto &task : tasks["tasks"]) {
 
-    current_task_index_ = 0;
+        std::string type = task["type"];
+        RCLCPP_INFO(get_logger(), "Execute: %s", type.c_str());
 
-    RCLCPP_INFO(get_logger(),
-        "Start task sequence (%zu tasks)", tasks_.size());
+        if (type == "navigate") {
 
-    run_next_task();
-}
+            auto pose_json = task["pose"];
 
-void TaskOrchestrator::run_next_task()
-{
-    if (current_task_index_ >= tasks_.size()) {
-        RCLCPP_INFO(get_logger(), "All tasks finished");
-        return;
-    }
+            geometry_msgs::msg::PoseStamped pose;
+            pose.header.frame_id = "map";
+            pose.header.stamp = now();
+            pose.pose.position.x = pose_json.value("x", 0.0);
+            pose.pose.position.y = pose_json.value("y", 0.0);
+            pose.pose.orientation.w = 1.0;
 
-    const auto &task = tasks_[current_task_index_];
-
-    if (!task.contains("type")) {
-        RCLCPP_ERROR(get_logger(), "Task missing 'type' field");
-        return;
-    }
-
-    std::string type = task["type"];
-
-    RCLCPP_INFO(get_logger(), "Task %zu: %s",
-                current_task_index_, type.c_str());
-
-    /* ================= navigate ================= */
-
-    if (type == "navigate") {
-
-        if (!task.contains("pose")) {
-            RCLCPP_ERROR(get_logger(), "Navigate task missing pose");
-            return;
+            wait_nav(pose);
         }
-
-        auto pose_json = task["pose"];
-
-        geometry_msgs::msg::PoseStamped pose;
-        pose.header.frame_id = "map";
-        pose.header.stamp = now();
-
-        pose.pose.position.x = pose_json.value("x", 0.0);
-        pose.pose.position.y = pose_json.value("y", 0.0);
-        pose.pose.orientation.w = 1.0;
-
-        adapter_->navigate_to(
-            pose,
-            [this](TaskResult res) {
-                if (!res.success) {
-                    RCLCPP_ERROR(get_logger(), "Navigate failed");
-                    return;
-                }
-                current_task_index_++;
-                run_next_task();
-            }
-        );
+        else if (type == "observe") {
+            wait_observe();
+        }
+        else {
+            RCLCPP_WARN(get_logger(),
+                        "Unknown task type: %s", type.c_str());
+        }
     }
 
-    /* ================= observe ================= */
+    RCLCPP_INFO(get_logger(), "All tasks finished");
 
-    else if (type == "observe") {
-
-        adapter_->observe(
-            [this](TaskResult res, std::string path) {
-                if (!res.success) {
-                    RCLCPP_ERROR(get_logger(), "Observe failed");
-                    return;
-                }
-                RCLCPP_INFO(get_logger(),
-                    "Image saved: %s", path.c_str());
-
-                current_task_index_++;
-                run_next_task();
-            }
-        );
-    }
-
-    else {
-        RCLCPP_WARN(get_logger(),
-            "Unknown task type: %s", type.c_str());
-        current_task_index_++;
-        run_next_task();
-    }
+    perf_file_.flush();
 }
 
-/* ============================= */
-/*              main             */
-/* ============================= */
+/* ---------------- wait_nav ---------------- */
+
+void TaskOrchestrator::wait_nav(
+    const geometry_msgs::msg::PoseStamped &pose)
+{
+    auto start = std::chrono::steady_clock::now();
+
+    std::promise<void> done;
+    auto future = done.get_future();
+
+    adapter_->navigate_to(pose,
+        [&](TaskResult){
+            done.set_value();
+        });
+
+    future.wait();
+
+    auto end = std::chrono::steady_clock::now();
+    auto latency =
+        std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
+    perf_file_ << "navigate,"
+               << start.time_since_epoch().count() << ","
+               << end.time_since_epoch().count() << ","
+               << latency << "\n";
+}
+
+/* ---------------- wait_observe ---------------- */
+
+void TaskOrchestrator::wait_observe()
+{
+    auto start = std::chrono::steady_clock::now();
+
+    std::promise<void> done;
+    auto future = done.get_future();
+
+    adapter_->observe(
+        [&](TaskResult, std::string path){
+            RCLCPP_INFO(get_logger(),
+                        "Image saved: %s", path.c_str());
+            done.set_value();
+        });
+
+    future.wait();
+
+    auto end = std::chrono::steady_clock::now();
+    auto latency =
+        std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
+    perf_file_ << "observe,"
+               << start.time_since_epoch().count() << ","
+               << end.time_since_epoch().count() << ","
+               << latency << "\n";
+}
+
+/* ===================================================== */
+/*                        main                           */
+/* ===================================================== */
 
 int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
 
     auto orchestrator =
-        std::make_shared<TaskOrchestrator>(nullptr);
+        std::make_shared<TaskOrchestrator>();
 
     auto adapter =
         std::make_shared<TurtleBot3Adapter>(orchestrator);
 
     orchestrator->set_adapter(adapter);
 
+    rclcpp::executors::MultiThreadedExecutor executor;
+    executor.add_node(orchestrator);
+
+    std::thread spin_thread([&executor]() {
+        executor.spin();
+    });
+
     while (!adapter->is_action_server_ready()) {
         RCLCPP_INFO(orchestrator->get_logger(),
                     "Waiting for Nav2 action server...");
-        rclcpp::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
     json tasks = request_from_llm(
@@ -228,7 +215,9 @@ int main(int argc, char **argv)
 
     orchestrator->run_task_sequence(tasks);
 
-    rclcpp::spin(orchestrator);
+    executor.cancel();
+    spin_thread.join();
+
     rclcpp::shutdown();
     return 0;
 }

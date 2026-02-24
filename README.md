@@ -33,3 +33,6 @@ ros2 launch turtlebot3_navigation2 navigation2.launch.py \
   ros2 launch agirobot_control agibot_sim.launch.py world:=/home/parsifal/study/agibot/worlds/turtlebot3_world.world use_sim_time:=true
 
   ：质量尽量小，惯量尽量小但非零，保证仿真稳定。
+
+
+  
