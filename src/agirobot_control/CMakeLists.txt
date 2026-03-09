@@ -33,6 +33,15 @@ add_executable(image_latency_monitor
   src/image_latency_monitor.cpp
 )
 
+find_package(behaviortree_cpp_v3 REQUIRED)
+
+include_directories(include ${OpenCV_INCLUDE_DIRS})
+
+add_executable(bt_main src/bt_main.cpp src/bt_nodes/navigate_node.cpp src/bt_nodes/observe_node.cpp)
+ament_target_dependencies(bt_main behaviortree_cpp_v3 rclcpp nav2_msgs rclcpp_action sensor_msgs cv_bridge)
+target_link_libraries(bt_main ${OpenCV_LIBRARIES})
+
+
 ament_target_dependencies(image_latency_monitor
   rclcpp
   sensor_msgs
@@ -46,7 +55,15 @@ ament_target_dependencies(task_orchestrator
   sensor_msgs
   cv_bridge
 )
+ament_target_dependencies(bt_main
+  rclcpp
+  behaviortree_cpp_v3
+)
 
+install(TARGETS
+  bt_main
+  DESTINATION lib/${PROJECT_NAME}
+)
 install(TARGETS
   task_orchestrator
   image_latency_monitor

@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <functional>
+#include "rclcpp/rclcpp.hpp"      
 #include "geometry_msgs/msg/pose_stamped.hpp"
 
 struct TaskResult { bool success; std::string reason; };

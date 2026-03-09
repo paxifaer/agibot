@@ -1,0 +1,36 @@
+<root main_tree_to_execute="MainTree">
+
+  <BehaviorTree ID="MainTree">
+
+    <Sequence name="root_sequence">
+
+      <!-- Navigate to point A -->
+      <RetryUntilSuccessful num_attempts="2">
+        <Navigate x="1.0" y="0.0" timeout_ms="45000"/>
+      </RetryUntilSuccessful>
+
+      <!-- Observe -->
+      <Timeout msec="3000">
+        <Observe timeout_ms="3000"/>
+      </Timeout>
+
+      <!-- Navigate to point B -->
+      <RetryUntilSuccessful num_attempts="2">
+        <Navigate x="1.0" y="1.0" timeout_ms="45000"/>
+      </RetryUntilSuccessful>
+
+      <!-- Observe -->
+      <Timeout msec="3000">
+        <Observe timeout_ms="3000"/>
+      </Timeout>
+
+      <!-- Return Home -->
+      <RetryUntilSuccessful num_attempts="2">
+        <Navigate x="0.0" y="0.0" timeout_ms="45000"/>
+      </RetryUntilSuccessful>
+
+    </Sequence>
+
+  </BehaviorTree>
+
+</root>
