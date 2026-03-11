@@ -70,7 +70,6 @@ std::shared_ptr<RobotAdapter> ObserveNode::get_adapter()
         RCLCPP_ERROR(rclcpp::get_logger("NavigateNode"), "Blackboard is null");
         return nullptr;
     }
-
     try
     {
         return bb->get<std::shared_ptr<RobotAdapter>>("adapter");

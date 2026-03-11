@@ -4,24 +4,34 @@
 
 #include "agirobot_control/bt_nodes/navigate_node.hpp"
 #include "agirobot_control/bt_nodes/observe_node.hpp"
-#include "agirobot_control/turtlebot3_adapter.hpp"
-
+#include "agirobot_control/robot_adapter_factory.hpp"
 #include <thread>
 #include <chrono>
 
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
+  std::string robot = "turtlebot3";
 
+  for(int i=0;i<argc;i++)
+  {
+      if(std::string(argv[i]) == "--robot" && i+1 < argc)
+      {
+          robot = argv[i+1];
+      }
+  }
   // control node: for BT and action client
   auto control_node = std::make_shared<rclcpp::Node>("agirobot_control_node");
 
   // perception node: for camera subscription; spin separately
   auto perception_node = std::make_shared<rclcpp::Node>("agirobot_perception_node");
 
-  // create adapter with both nodes
-  std::shared_ptr<RobotAdapter> adapter =
-      std::make_shared<TurtleBot3Adapter>(control_node, perception_node);
+  auto adapter =
+      RobotAdapterFactory::create(
+          robot,
+          control_node,
+          perception_node
+      );
 
   BT::BehaviorTreeFactory factory;
   factory.registerNodeType<NavigateNode>("Navigate");

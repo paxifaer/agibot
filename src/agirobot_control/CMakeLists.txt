@@ -37,9 +37,28 @@ find_package(behaviortree_cpp_v3 REQUIRED)
 
 include_directories(include ${OpenCV_INCLUDE_DIRS})
 
-add_executable(bt_main src/bt_main.cpp src/bt_nodes/navigate_node.cpp src/bt_nodes/observe_node.cpp src/turtlebot3_adapter.cpp)
+add_executable(bt_main src/bt_main.cpp src/bt_nodes/navigate_node.cpp src/bt_nodes/observe_node.cpp)
+# target_link_libraries(bt_main ${OpenCV_LIBRARIES})
+
+add_library(adapter
+  src/tiago_adapter.cpp
+  src/turtlebot3_adapter.cpp
+)
 ament_target_dependencies(bt_main behaviortree_cpp_v3 rclcpp nav2_msgs rclcpp_action sensor_msgs cv_bridge)
-target_link_libraries(bt_main ${OpenCV_LIBRARIES})
+
+ament_target_dependencies(
+  adapter
+  rclcpp
+  rclcpp_action
+  nav2_msgs
+  sensor_msgs
+  cv_bridge
+)
+
+target_link_libraries(bt_main
+  ${OpenCV_LIBRARIES}
+  adapter
+)
 
 
 ament_target_dependencies(image_latency_monitor
@@ -55,10 +74,10 @@ ament_target_dependencies(image_latency_monitor
 #   sensor_msgs
 #   cv_bridge
 # )
-ament_target_dependencies(bt_main
-  rclcpp
-  behaviortree_cpp_v3
-)
+# ament_target_dependencies(bt_main
+#   rclcpp
+#   behaviortree_cpp_v3
+# )
 
 install(TARGETS
   bt_main
