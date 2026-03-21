@@ -83,11 +83,10 @@ install(TARGETS
   bt_main
   DESTINATION lib/${PROJECT_NAME}
 )
-# install(TARGETS
-#   task_orchestrator
-#   image_latency_monitor
-#   DESTINATION lib/${PROJECT_NAME}
-# )
+install(TARGETS
+  image_latency_monitor
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 install(
   DIRECTORY launch

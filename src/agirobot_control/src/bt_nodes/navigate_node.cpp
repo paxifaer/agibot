@@ -6,21 +6,20 @@
 
 static std::mutex nav_log_mtx;
 
-BT::NodeStatus NavigateNode::tick()
+BT::NodeStatus NavigateNode::onStart()
 {
-  // This implementation keeps simple "start->async callback -> wait" but
-  // records timestamps to a CSV file for performance analysis.
   double x, y;
   int timeout_ms = 45000;
-
+  start_time_ = std::chrono::steady_clock::now();
   if(!getInput("x", x) || !getInput("y", y)) {
-    throw BT::RuntimeError("NavigateNode missing required input x/y");
+    throw BT::RuntimeError("NavigateNode missing x/y");
   }
+
   getInput("timeout_ms", timeout_ms);
 
   auto adapter = get_adapter();
   if (!adapter) {
-    RCLCPP_ERROR(rclcpp::get_logger("NavigateNode"), "Adapter not found on blackboard");
+    RCLCPP_ERROR(rclcpp::get_logger("NavigateNode"), "Adapter missing");
     return BT::NodeStatus::FAILURE;
   }
 
@@ -30,40 +29,47 @@ BT::NodeStatus NavigateNode::tick()
   pose.pose.position.y = y;
   pose.pose.orientation.w = 1.0;
 
-  // record start time
-  auto start = std::chrono::steady_clock::now();
-
-  std::promise<bool> prom;
-  auto fut = prom.get_future();
+  done_ = false;
+  success_ = false;
 
   adapter->navigate_to(pose,
-      [&prom](TaskResult r) {
-          prom.set_value(r.success);
-  });
+      [this](TaskResult r) {
+          success_ = r.success;
+          done_ = true;
+      });
 
-  if (fut.wait_for(std::chrono::milliseconds(timeout_ms)) == std::future_status::ready) {
-    bool ok = fut.get();
+  return BT::NodeStatus::RUNNING;
+}
 
-    auto end = std::chrono::steady_clock::now();
-    long long latency_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+BT::NodeStatus NavigateNode::onRunning()
+{
+  if (!done_)
+    return BT::NodeStatus::RUNNING;
 
-    // write CSV line
-    {
-      std::lock_guard<std::mutex> lk(nav_log_mtx);
-      std::ofstream csv("nav_latency.csv", std::ios::app);
-      if (csv.tellp() == 0) {
-        csv << "start_ns,end_ns,latency_ms\n";
-      }
-      csv << start.time_since_epoch().count() << ","
-          << end.time_since_epoch().count() << ","
-          << latency_ms << "\n";
+  auto end = std::chrono::steady_clock::now();
+  long long latency_ms =
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          end - start_time_).count();
+
+  // 写 CSV
+  {
+    std::lock_guard<std::mutex> lk(nav_log_mtx);
+    std::ofstream csv("nav_latency.csv", std::ios::app);
+    if (csv.tellp() == 0) {
+      csv << "start_ns,end_ns,latency_ms\n";
     }
-
-    return ok ? BT::NodeStatus::SUCCESS : BT::NodeStatus::FAILURE;
-  } else {
-    RCLCPP_WARN(rclcpp::get_logger("NavigateNode"), "Navigate node timeout");
-    return BT::NodeStatus::FAILURE;
+    csv << start_time_.time_since_epoch().count() << ","
+        << end.time_since_epoch().count() << ","
+        << latency_ms << "\n";
   }
+
+  return success_ ? BT::NodeStatus::SUCCESS
+                  : BT::NodeStatus::FAILURE;
+}
+
+void NavigateNode::onHalted()
+{
+  RCLCPP_WARN(rclcpp::get_logger("NavigateNode"), "Navigation halted");
 }
 
 std::shared_ptr<RobotAdapter> NavigateNode::get_adapter()

@@ -30,12 +30,19 @@ ros2 launch turtlebot3_navigation2 navigation2.launch.py \
   log_level:=debug
   
 
-运行使用自己的world进行仿真：
-  ros2 launch agirobot_control agibot_sim.launch.py world:=/home/parsifal/study/agibot/worlds/turtlebot3_world.world use_sim_time:=true
+<!-- 运行使用自己的world进行仿真：
+  ros2 launch agirobot_control agibot_sim.launch.py world:=/home/parsifal/study/agibot/worlds/turtlebot3_world.world use_sim_time:=true -->
 
   ：质量尽量小，惯量尽量小但非零，保证仿真稳定。
                         
 turtlebot3 modelel:
+
+source /usr/share/gazebo/setup.bash
+  export TURTLEBOT3_MODEL=burger
+  ros2 launch turtlebot3_gazebo  turtlebot3_world.launch.py headless:=True
+  export TURTLEBOT3_MODEL=burger
+  ros2 launch turtlebot3_navigation2 navigation2.launch.py use_sim_time:=true
+  
   ros2 run agirobot_control bt_main /home/parsaifal/work/agibot/behavior_tree.xml --robot turtlebot3
 
 tiago model:
@@ -65,9 +72,11 @@ gzserver exit code -6
 export LIBGL_ALWAYS_SOFTWARE=1
 
 然后使用最小配置启动 TIAGo：
+ros2 run topic_tools relay   /mobile_base_controller/odom /odom
 
-ros2 launch tiago_gazebo tiago_gazebo.launch.py is_public_sim:=True arm_type:=no-arm end_effector:=no-end-effector ft_sensor:=no-ft-sensor moveit:=False tuck_arm:=False navigation:=True rviz:=False gzclient:=False
 
+1.ros2 launch tiago_gazebo tiago_gazebo.launch.py is_public_sim:=True arm_type:=no-arm end_effector:=no-end-effector ft_sensor:=no-ft-sensor moveit:=False tuck_arm:=False navigation:=True rviz:=False gzclient:=False
+2. ros2 run agirobot_control bt_main /home/parsaifal/work/agibot/behavior_tree.xml --robot tiago
 ros2 run topic_tools relay   /mobile_base_controller/odom /odom
 说明：
 该方法强制 Gazebo 使用 CPU 进行软件渲染，避免 GPU 驱动问题。
