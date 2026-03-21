@@ -1,3 +1,2 @@
 qos,avg_ms,min_ms,max_ms,std_ms
-best_effort,14.6802,7,15,0.894728
-reliable,14.5253,7,15,1.05875
+best_effort,15.7143,15,16,0.451754
