@@ -57,14 +57,8 @@ TurtleBot3 任务执行（导航 + 观测）
 TIAGo 复用同一行为树执行
 系统性能优化对比
 快速开始
-1. 建图
-ros2 launch slam_toolbox online_async_launch.py use_sim_time:=true
-ros2 run turtlebot3_teleop teleop_keyboard
 
-控制机器人绕场景移动，完成建图后保存：
-
-ros2 run nav2_map_server map_saver_cli -f my_map
-2. 启动仿真（TurtleBot3）
+1. 启动仿真（TurtleBot3）
 export TURTLEBOT3_MODEL=burger
 ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
 ros2 launch turtlebot3_navigation2 navigation2.launch.py use_sim_time:=true
@@ -72,7 +66,7 @@ ros2 launch turtlebot3_navigation2 navigation2.launch.py use_sim_time:=true
 运行行为树：
 
 ros2 run agirobot_control bt_main /path/to/behavior_tree.xml --robot turtlebot3
-3. 启动 TIAGo
+2. 启动 TIAGo
 ros2 launch tiago_gazebo tiago_gazebo.launch.py is_public_sim:=True
 
 运行同一行为树：
