@@ -16,7 +16,7 @@
 Same behavior logic, different robots, no modification required
 
 ## 项目结构
-'''
+```
 agirobot/
 ├── README.md
 ├── src/
@@ -30,7 +30,7 @@ agirobot/
 ├── maps/
 ├── worlds/
 └── scripts/
-'''
+```
 ## 说明：
 
 agirobot_control：行为树执行、任务调度、ROS2 Action 封装
