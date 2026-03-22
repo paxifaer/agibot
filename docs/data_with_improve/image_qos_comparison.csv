@@ -1,0 +1,3 @@
+qos,avg_ms,min_ms,max_ms,std_ms
+best_effort,9.03312,7,9,0.375509
+reliable,9.12723,8,9,0.400207

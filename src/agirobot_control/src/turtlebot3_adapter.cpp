@@ -84,7 +84,7 @@ void TurtleBot3Adapter::observe(std::function<void(TaskResult, std::string)> cb)
     try {
       auto cv_ptr = cv_bridge::toCvCopy(msg, "bgr8");
       cv::Mat img = cv_ptr->image.clone();
-
+      // auto &img = cv_ptr->image;
       std::ostringstream ss;
       ss << "/tmp/observe_" << perception_node_->now().nanoseconds() << ".png";
       std::string path = ss.str();
@@ -104,9 +104,13 @@ void TurtleBot3Adapter::observe(std::function<void(TaskResult, std::string)> cb)
     }
   };
 
+  rclcpp::QoS qos(rclcpp::KeepLast(1));   // depth=1
+  qos.best_effort();                     // sensor用best_effort
+
   tmp_image_sub_ = perception_node_->create_subscription<sensor_msgs::msg::Image>(
       "/camera/image_raw",
-      rclcpp::SensorDataQoS(),
+      qos,
+      // rclcpp::SensorDataQoS(),
       lambda);
 }
 

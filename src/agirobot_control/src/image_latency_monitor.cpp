@@ -32,6 +32,7 @@ private:
         current_reliable_ = reliable;
 
         rclcpp::QoS qos(10);
+        // rclcpp::QoS qos(rclcpp::KeepLast(1));
         if (reliable)
             qos.reliable();
         else

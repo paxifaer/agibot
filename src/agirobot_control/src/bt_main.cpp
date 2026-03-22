@@ -20,12 +20,14 @@ int main(int argc, char ** argv)
           robot = argv[i+1];
       }
   }
-  // control node: for BT and action client
-  auto control_node = std::make_shared<rclcpp::Node>("agirobot_control_node");
+  rclcpp::NodeOptions options;
+  options.use_intra_process_comms(true);   
 
-  // perception node: for camera subscription; spin separately
-  auto perception_node = std::make_shared<rclcpp::Node>("agirobot_perception_node");
+  auto control_node = std::make_shared<rclcpp::Node>(
+      "agirobot_control_node", options);
 
+  auto perception_node = std::make_shared<rclcpp::Node>(
+      "agirobot_perception_node", options);
   auto adapter =
       RobotAdapterFactory::create(
           robot,
@@ -63,6 +65,11 @@ int main(int argc, char ** argv)
   // BT ticking in another thread so control_exec can process callbacks concurrently
   std::atomic_bool stop_flag(false);
   std::thread bt_thread([&]() {
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(2, &cpuset);  // 绑定CPU2
+
+    pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
     while (rclcpp::ok() && !stop_flag.load()) {
       tree.tickRoot();
       // if tree finished, break to allow graceful shutdown
