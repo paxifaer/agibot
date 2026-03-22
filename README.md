@@ -52,7 +52,7 @@ maps：SLAM 构建的地图
 
 ## 视频演示
 
-![Demo Video](https://www.bilibili.com/video/BV14WAGzKEMD/)
+![Demo Video](docs/images.jpeg)(https://www.bilibili.com/video/BV14WAGzKEMD/)
 
 
 ## 演示内容包括：
