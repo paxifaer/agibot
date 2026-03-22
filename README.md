@@ -59,7 +59,7 @@ Observe 结果部分展示：
 </p>
 
 <p align="center">
-  <img src="docs/observe/observ_02.png)" width="45%" />
+  <img src="docs/observe/observ_02.png" width="45%" />
   <img src="docs/observe/observ_03.png" width="45%" />
 </p>
 
