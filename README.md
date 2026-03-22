@@ -49,13 +49,23 @@ maps：SLAM 构建的地图
 
 视频演示
 
-[![Demo Video]](docs/architure.png)(https://www.bilibili.com/video/BV14WAGzKEMD/)
+![Demo Video](docs/architure.png)(https://www.bilibili.com/video/BV14WAGzKEMD/)
 
 Observe 结果部分展示：
-![map](docs/observe/map.png)
-![observe01](docs/observe/observ_01.png)
-![observe02](docs/observe/observ_02.png)
-![observe03](docs/observe/observ_03.png)
+
+<p align="center">
+  <img src="docs/observe/map.png" width="45%" />
+  <img src="docs/observe/observ_01.png" width="45%" />
+</p>
+
+<p align="center">
+  <img src="docs/observe/observ_02.png)" width="45%" />
+  <img src="docs/observe/observ_03.png" width="45%" />
+</p>
+
+
+
+
 演示内容包括：
 
 TurtleBot3 任务执行（导航 + 观测）
@@ -114,9 +124,10 @@ options.use_intra_process_comms(true);
   <img src="docs/data_with_improve/nav_latency.csv.png" width="45%" />
   <img src="docs/data_without_improve/nav_latency.csv.png" width="45%" />
 </p>
+
 <p align="center">
-  <img src="docs/data_with_improve/observe.csv.png" width="45%" />
-  <img src="docs/data_without_improve/observe.csv.png" width="45%" />
+  <img src="docs/data_with_improve/observe_latency.csv.png" width="45%" />
+  <img src="docs/data_without_improve/observe_latency.csv.png" width="45%" />
 </p>
 
 优化前：
