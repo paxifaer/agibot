@@ -1,109 +1,166 @@
-# agibot
-bot for agi
+agirobot
+
+一个基于 ROS2 的机器人任务执行系统，使用行为树作为核心执行引擎，实现跨机器人平台的任务复用与高性能控制。
+
+本项目重点在于系统架构设计与工程实现，而非算法开发，目标是构建一个可扩展、可复用、可优化的机器人控制框架。
+
+项目特点
+使用 Behavior Tree 统一管理任务执行流程
+支持不同机器人平台复用同一行为逻辑（TurtleBot3 / TIAGo）
+基于 ROS2 + Nav2 构建完整导航系统
+提供 QoS、零拷贝、线程绑定等性能优化方案
+支持仿真环境快速验证与复现
+
+核心结论：
+
+Same behavior logic, different robots, no modification required
+
+项目结构
 agirobot/
 ├── README.md
 ├── src/
-│   ├── turtlebot3/             # 官方 / 自定义改动的 TurtleBot3 package
+│   ├── turtlebot3/
 │   ├── turtlebot3_msgs/
-│   ├── turtlebot3_simulations/ # Gazebo worlds / 仿真
-│   ├── agirobot_control/       # 自己写的 LLM + ROS2 Action / Behavior Tree 逻辑
-│   ├── agirobot_perception/    # 感知数据处理节点（LiDAR / 相机 / IMU）
-│   └── agirobot_demo/          # 最终演示 Launch / Behavior Tree / Example Tasks
-├── launch/                     # 所有 launch 文件
-├── maps/                       # 测试地图
-├── worlds/                     # Gazebo 自定义世界
-└── scripts/                    # 辅助脚本（比如生成任务、测试脚本）
+│   ├── turtlebot3_simulations/
+│   ├── agirobot_control/
+│   ├── agirobot_perception/
+│   └── agirobot_demo/
+├── launch/
+├── maps/
+├── worlds/
+└── scripts/
 
-建图：
-ros2 launch slam_toolbox online_async_launch.py use_sim_time:=true 
-然后用 键盘或导航 让机器人绕场景走一圈。
-ros2 run turtlebot3_teleop teleop_keyboard(使用键盘建图)
+说明：
 
-保存自己地图：ros2 run nav2_map_server map_saver_cli \
-  -f my_map  
+agirobot_control：行为树执行、任务调度、ROS2 Action 封装
+agirobot_perception：传感器数据处理（相机 / LiDAR 等）
+agirobot_demo：演示用 launch 文件与任务配置
+worlds：Gazebo 仿真环境
+maps：SLAM 构建的地图
+系统架构
 
-拉取gazebo+navigation2：
-  
-  ros2 launch turtlebot3_gazebo  turtlebot3_world.launch.py
-  ros2 launch turtlebot3_navigation2  navigation2.launch.py use_sim_time:=true 
-ros2 launch turtlebot3_navigation2 navigation2.launch.py \
-  log_level:=debug
-  
+系统采用“任务生成 + 行为执行分离”的设计：
 
-<!-- 运行使用自己的world进行仿真：
-  ros2 launch agirobot_control agibot_sim.launch.py world:=/home/parsifal/study/agibot/worlds/turtlebot3_world.world use_sim_time:=true -->
+上层：任务定义（可扩展为 LLM / API）
+中层：Behavior Tree 执行引擎（C++）
+下层：Robot Adapter（适配不同机器人）
 
-  ：质量尽量小，惯量尽量小但非零，保证仿真稳定。
-                        
-turtlebot3 modelel:
+行为树作为唯一执行入口，不依赖具体机器人实现。
 
-source /usr/share/gazebo/setup.bash
-  export TURTLEBOT3_MODEL=burger
-  ros2 launch turtlebot3_gazebo  turtlebot3_world.launch.py headless:=True
-  export TURTLEBOT3_MODEL=burger
-  ros2 launch turtlebot3_navigation2 navigation2.launch.py use_sim_time:=true
-  
-  ros2 run agirobot_control bt_main /home/parsaifal/work/agibot/behavior_tree.xml --robot turtlebot3
+视频演示
 
-tiago model:
-     ros2 launch tiago_gazebo tiago_gazebo.launch.py is_public_sim:=True                                                             
-  
-    ros2 run agirobot_control bt_main   /home/parsaifal/work/agibot/behavior_tree.xml  --robot tiago
-```````````````````````Troubleshooting：TIAGo 仿真无法启动（Gazebo 崩溃）``````````````
+https://www.bilibili.com/video/BV14WAGzKEMD/
 
-问题现象：
-运行 TIAGo 仿真时出现如下错误：
-nouveau_pushbuf_data: Assertion `kref' failed.
+演示内容包括：
+
+TurtleBot3 任务执行（导航 + 观测）
+TIAGo 复用同一行为树执行
+系统性能优化对比
+快速开始
+1. 建图
+ros2 launch slam_toolbox online_async_launch.py use_sim_time:=true
+ros2 run turtlebot3_teleop teleop_keyboard
+
+控制机器人绕场景移动，完成建图后保存：
+
+ros2 run nav2_map_server map_saver_cli -f my_map
+2. 启动仿真（TurtleBot3）
+export TURTLEBOT3_MODEL=burger
+ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
+ros2 launch turtlebot3_navigation2 navigation2.launch.py use_sim_time:=true
+
+运行行为树：
+
+ros2 run agirobot_control bt_main /path/to/behavior_tree.xml --robot turtlebot3
+3. 启动 TIAGo
+ros2 launch tiago_gazebo tiago_gazebo.launch.py is_public_sim:=True
+
+运行同一行为树：
+
+ros2 run agirobot_control bt_main /path/to/behavior_tree.xml --robot tiago
+跨机器人复用
+
+同一份 Behavior Tree，无需修改代码，即可在不同机器人上运行。
+
+差异通过 Robot Adapter 层处理：
+
+TurtleBot3：移动底盘
+TIAGo：移动底盘（可扩展机械臂）
+
+行为层完全一致。
+
+性能优化
+
+本项目对 ROS2 通信链路进行了系统级优化：
+
+优化策略
+线程绑定（CPU affinity）
+QoS 调整（KeepLast + best_effort）
+intra-process 通信（零拷贝）
+降低消息队列深度
+
+关键代码示例：
+
+CPU_SET(2, &cpuset);
+pthread_setaffinity_np(...);
+
+rclcpp::QoS qos(rclcpp::KeepLast(1));
+qos.best_effort();
+
+options.use_intra_process_comms(true);
+性能结果
+
+导航任务延迟对比：
+
+优化前：
+
+Mean: 15180.69
+
+优化后：
+
+Mean: 12640.13
+
+整体下降约 16%
+
+观测任务延迟基本稳定，无明显退化。
+
+仿真问题（TIAGo Gazebo 崩溃）
+
+部分环境下运行 TIAGo 仿真会出现：
+
+nouveau_pushbuf_data: Assertion `kref' failed
 gzserver exit code -6
 
-或者：
+原因：
 
-* Gazebo 启动后直接崩溃
-* 无法加载 world
-* 仿真界面无法正常显示
+使用 nouveau 开源显卡驱动
+Gazebo 渲染复杂模型时崩溃
 
-问题原因：
-该问题通常由显卡驱动引起，而不是 ROS2 或 TIAGo 配置问题。
-使用的是 nouveau（开源 NVIDIA 驱动），在 Gazebo 渲染复杂模型（如 TIAGo）时容易崩溃。
-
-解决方案（推荐）：
-在启动前执行：
+解决方案：
 
 export LIBGL_ALWAYS_SOFTWARE=1
 
-然后使用最小配置启动 TIAGo：
-ros2 run topic_tools relay   /mobile_base_controller/odom /odom
+使用 CPU 进行软件渲染，可保证稳定运行。
 
+项目定位
 
-1.ros2 launch tiago_gazebo tiago_gazebo.launch.py is_public_sim:=True arm_type:=no-arm end_effector:=no-end-effector ft_sensor:=no-ft-sensor moveit:=False tuck_arm:=False navigation:=True rviz:=False gzclient:=False
-2. ros2 run agirobot_control bt_main /home/parsaifal/work/agibot/behavior_tree.xml --robot tiago
-ros2 run topic_tools relay   /mobile_base_controller/odom /odom
-说明：
-该方法强制 Gazebo 使用 CPU 进行软件渲染，避免 GPU 驱动问题。
+本项目重点展示：
 
-优点：
+ROS2 系统设计能力
+行为树任务调度能力
+跨机器人架构抽象能力
+DDS / QoS 性能优化能力
 
-* 稳定，不会崩溃
-* 不依赖显卡驱动
-* 适用于服务器/无GPU环境
+不涉及复杂算法开发，侧重工程实现与系统整合。
 
-缺点：
+总结
 
-* 渲染性能较低（但不影响功能验证）
+本项目实现了一个硬件无关的机器人控制系统：
 
-可选方案：
-如果需要 GPU 加速，可以安装 NVIDIA 官方驱动：
+行为树作为统一执行层
+ROS2 + Nav2 作为底层框架
+通过 Adapter 支持多机器人
 
-sudo ubuntu-drivers autoinstall
-reboot
+核心目标是：
 
-最终建议：
-开发阶段统一使用：
-
-export LIBGL_ALWAYS_SOFTWARE=1
-
-可以保证 TIAGo 仿真稳定运行。
-
-总结：
-TIAGo 仿真在部分环境下会因显卡驱动问题导致 Gazebo 崩溃，可通过设置 LIBGL_ALWAYS_SOFTWARE=1 解决。
-````````````````````````````````````````````````````````
+在不修改行为逻辑的情况下，实现任务在不同机器人之间复用。
