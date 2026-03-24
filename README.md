@@ -48,11 +48,13 @@ maps：SLAM 构建的地图
 
 行为树作为唯一执行入口，不依赖具体机器人实现。
 
-### ![架构图](docs/architure.png)
 
 ## 视频演示
 
 ![Demo Video](docs/images.jpeg)(https://www.bilibili.com/video/BV14WAGzKEMD/)
+
+### ![架构图](docs/architure.png)
+
 
 
 ## 演示内容包括：
