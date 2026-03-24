@@ -31,8 +31,13 @@ agirobot/
 ├── worlds/
 └── scripts/
 ```
-## 说明：
 
+## 视频演示
+
+![Demo Video](docs/images.jpeg)(https://www.bilibili.com/video/BV14WAGzKEMD/)
+
+## 说明：
+```
 agirobot_control：行为树执行、任务调度、ROS2 Action 封装
 agirobot_perception：传感器数据处理（相机 / LiDAR 等）
 agirobot_demo：演示用 launch 文件与任务配置
@@ -47,11 +52,8 @@ maps：SLAM 构建的地图
 下层：Robot Adapter（适配不同机器人）
 
 行为树作为唯一执行入口，不依赖具体机器人实现。
+```
 
-
-## 视频演示
-
-![Demo Video](docs/images.jpeg)(https://www.bilibili.com/video/BV14WAGzKEMD/)
 
 ### ![架构图](docs/architure.png)
 
