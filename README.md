@@ -11,9 +11,9 @@
 提供 QoS、零拷贝、线程绑定等性能优化方案
 支持仿真环境快速验证与复现
 
-核心结论：
+## 视频演示
 
-Same behavior logic, different robots, no modification required
+![Demo Video](docs/images.jpeg)(https://www.bilibili.com/video/BV14WAGzKEMD/)
 
 ## 项目结构
 ```
@@ -32,9 +32,6 @@ agirobot/
 └── scripts/
 ```
 
-## 视频演示
-
-![Demo Video](docs/images.jpeg)(https://www.bilibili.com/video/BV14WAGzKEMD/)
 
 ## 说明：
 ```
